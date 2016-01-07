@@ -1,0 +1,48 @@
+This can be an easy way to transform debian packages from any repo to the DBP format which may be used by the pyra handheld.
+It needs "dbputils" (https://pyra-handheld.com/boards/threads/dbputils-script.76576/) in it's PATH to do this.
+
+usage:
+./deb2dbp -p packagename [-b binary-to-execute] [-d 'debs-to-download] [-o] [-c]'
+ -o override existing builddir
+ -c create dbp (otherwise instructions are displayed)
+
+
+usage example:
+# on stock pandora/pyra get to know which deb packages you may need
+sudo apt-get install 3dchess ### choose 'n'
+
+# look at packages which would be downloaded and make an educated guess
+# either download them manually and expect them or just try it out
+# and let deb2dbp do the magix
+
+# do it manual
+# ./deb2dbp -p 3dchess -b 3Dc -d "xaw3dg 3dchess"
+
+./deb2dbp -p 3dchess
+please download deb files and extract them to ~/deb2dbp/3dchess/3dchess/dbpdata
+
+place icon at ~/deb2dbp/3dchess/3dchess/icons
+edit ~/deb2dbp/3dchess/3dchess/meta/default.desktop
+edit ~/deb2dbp/3dchess/3dchess/dbpdata/dbp_run.sh
+
+after that you are ready to run:
+rm /dragonbox/packages/3dchess.dbp ~/DBPS/3dchess.dbp
+cd ~/deb2dbp/3dchess && dbputils --pack 3dchess
+cp ~/DBPS/3dchess.dbp /dragonbox/packages
+
+
+# do it automatically
+./deb2dbp -p 3dchess -b 3Dc -d "xaw3dg 3dchess"
+Get:1 http://ftp.nl.debian.org/debian/ jessie/main 3dchess armhf 0.8.1-18 [37.2 kB]
+Get:2 http://ftp.nl.debian.org/debian/ jessie/main xaw3dg armhf 1.5+E-18.2 [144 kB]
+Fetched 182 kB in 1s (159 kB/s)  
+
+place icon at ~/deb2dbp/3dchess/3dchess/icons
+edit ~/deb2dbp/3dchess/3dchess/meta/default.desktop
+edit ~/deb2dbp/3dchess/3dchess/dbpdata/dbp_run.sh
+
+after that you are ready to run:
+rm /dragonbox/packages/3dchess.dbp ~/DBPS/3dchess.dbp
+cd ~/deb2dbp/3dchess && dbputils --pack 3dchess
+cp ~/DBPS/3dchess.dbp /dragonbox/packages
+

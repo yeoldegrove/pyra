@@ -1,0 +1,116 @@
+#!/bin/bash
+
+myhelp="usage: $0 -p packagename [-b binary-to-execute] [-d 'debs-to-download] [-o] [-c]'\n   -o   override existing builddir\n   -c   create dbp (otherwise instructions are displayed)"
+
+while getopts ":p:b:d:hco" optname
+  do
+    case "$optname" in
+      "p")
+        package="$OPTARG"
+        ;;
+      "b")
+        binary="$OPTARG"
+        ;;
+      "d")
+        debs="$OPTARG"
+        debdown=1
+        ;;
+      "?")
+        echo "Unknown option $OPTARG"
+	echo -e $myhelp
+        exit 1
+	;;
+      ":")
+        echo "No argument value for option $OPTARG"
+	echo -e $myhelp
+        exit 1
+        ;;
+      "h")
+	echo -e $myhelp
+        exit 0
+        ;;
+      "c")
+	create=1
+        ;;
+      "o")
+	override=1
+        ;;
+      *)
+	echo -e $myhelp
+	exit 2
+        ;;
+    esac
+  done
+
+test -z "$package" && echo -e "-p not specified\n$myhelp" && exit 3
+#test -z "$binary" && echo -e "-b not specified\$myhelp" && exit 3
+#test -z "$debs" && echo -e "-d not specified\$myhelp" && exit 3
+
+if [ "$override" == "1" ]; then
+  rm -rf ~/deb2dbp/${package}
+else
+  test -e ~/deb2dbp/${package} && echo -e "builddir ~/deb2dbp/${package} already exists\nuse -o to override it" && exit 3
+fi
+
+mkdir -p ~/deb2dbp/${package}/deb ~/deb2dbp/${package}/${package}/dbpdata ~/deb2dbp/${package}/${package}/icons ~/deb2dbp/${package}/${package}/meta
+
+if [ "$debdown" == "1" ]; then
+  cd ~/deb2dbp/${package}/deb
+  sudo apt-get download ${debs}
+  for i in ~/deb2dbp/${package}/deb/*; do
+    dpkg --extract $i ~/deb2dbp/${package}/${package}/dbpdata
+  done
+else
+  echo "please download deb files and extract them to ~/deb2dbp/${package}/${package}/dbpdata"
+fi
+
+cat > ~/deb2dbp/${package}/${package}/dbpdata/dbp_run.sh <<EOF
+#!/bin/bash
+progroot=/mnt/dbp/union/${package}
+
+export PATH="\$PATH:\$progroot/usr/games"
+export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:\$progroot/usr/lib:\$progroot/usr/lib/arm-linux-gnueabihf"
+
+${binary}
+EOF
+
+chmod +x ~/deb2dbp/${package}/${package}/dbpdata/dbp_run.sh
+
+cat > ~/deb2dbp/${package}/${package}/meta/default.desktop <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Categories=Game;Boardgame
+Name=${package}
+Comment=${package}
+Exec=dbp_run.sh
+Icon=${package}.png
+Path=
+Terminal=false
+StartupNotify=false
+
+[Package Entry]
+Id=${package}
+Arch=armhf
+Exec=dbp_run.sh
+Path=
+EOF
+
+if [ "$create" == "1" ]; then
+  rm /dragonbox/packages/${package}.dbp ~/DBPS/${package}.dbp
+  cd ~/deb2dbp/${package} && dbputils --pack ${package}
+  cp ~/DBPS/${package}.dbp /dragonbox/packages
+  echo "DBP should be ready and in your appmenu"
+else
+  echo ""
+  echo "TODO:"
+  echo "place icon at ~/deb2dbp/${package}/${package}/icons"
+  echo "edit ~/deb2dbp/${package}/${package}/meta/default.desktop"
+  echo "edit ~/deb2dbp/${package}/${package}/dbpdata/dbp_run.sh"
+  echo ""
+  echo "after that you are ready to run:"
+  echo "rm /dragonbox/packages/${package}.dbp ~/DBPS/${package}.dbp"
+  echo "cd ~/deb2dbp/${package} && dbputils --pack ${package}"
+  echo "cp ~/DBPS/${package}.dbp /dragonbox/packages"
+fi
+
